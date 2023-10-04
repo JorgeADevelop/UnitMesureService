@@ -5,7 +5,6 @@
     "dev": {
       "api_gateway_stage": "api",
       "environment_variables": {
-        "SECRET_KEY": "mysecretkey",
         "DEBUG": "True",
         "DB_USER": "postgres",
         "DB_PASSWORD": "salesproject123",
@@ -17,7 +16,6 @@
     "prod": {
       "api_gateway_stage": "api",
       "environment_variables": {
-        "SECRET_KEY": "myprodsecretkey",
         "DEBUG": "False"
       }
     }
