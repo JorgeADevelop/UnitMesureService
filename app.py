@@ -53,6 +53,7 @@ def indexUnitMeasures():
         offset = app.current_request.query_params.get("offset", 1)
         limit = app.current_request.query_params.get("limit", 10)
         unitMeasures = []
+        totalRecords = 0
 
         with Session(engine) as session:
             for data in session.query(UnitMeasure).offset(offset).limit(limit).all():
