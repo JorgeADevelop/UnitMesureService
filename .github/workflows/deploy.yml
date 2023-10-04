@@ -15,8 +15,8 @@ jobs:
       - name: Install Chalice
         run: pip install chalice
 
-      - name: Install pytest
-        run: pip install pytest
+      - name: Get dependecies
+        run: pip install -r requirements.txt
 
       - name: Deploy
         run: chalice deploy
