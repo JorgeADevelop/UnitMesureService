@@ -19,8 +19,17 @@ db_name = os.environ.get("DB_NAME")
 
 engine = create_engine(f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}", echo=True)
 
-
 Base = declarative_base()
+
+messages = {
+    "RecordFound": "The {resource} has been found successfully",
+    "RecordCreated": "The {resource} has been created successfully",
+    "RecordUpdated": "The {resource} with id '{id}' has been updated successfully",
+    "RecordDeleted": "The {resource} with id '{id}'has been deleted successfully",
+    "RecordNotFound": "The {resource} with id '{id}' has not been found",
+    "RecordAlreadyExists": "The {resource} already exists",
+    "InternalError": "An error occurred during your request, please try again"
+}
 
 
 class UnitMeasure(Base):
@@ -41,13 +50,20 @@ Base.metadata.create_all(engine)
 @app.route('/unit-measures', methods=['GET'])
 def index():
     try:
+        offset = app.current_request.query_params.get("offset", 1)
+        limit = app.current_request.query_params.get("limit", 10)
         unitMeasures = []
 
         with Session(engine) as session:
-            for data in session.query(UnitMeasure).all():
+            for data in session.query(UnitMeasure).offset(offset).limit(limit).all():
                 unitMeasures.append(UnitMeasureSchema().dump(data))
+                totalRecords = session.query(UnitMeasure).count()
 
-        return Response(unitMeasures, status_code=200)
+        return MakeResponsePaginate(
+            message=messages.get("RecordFound").format(resource="unit measures"),
+            data=unitMeasures,
+            totalRecords=totalRecords
+        )
     except KeyError as e:
         return e
 
@@ -57,9 +73,17 @@ def show(id):
     try:
         with Session(engine) as session:
             data = session.query(UnitMeasure).where(UnitMeasure.id == id).first()
+            if data is None:
+                return MakeResponse(
+                    message=messages.get("RecordNotFound").format(resource="unit measure", id=id),
+                    status_code=400
+                )
             unitMeasure = UnitMeasureSchema().dump(data)
 
-        return Response(unitMeasure, status_code=200)
+        return MakeResponse(
+            message=messages.get("RecordFound").format(resource="unit measure"),
+            data=unitMeasure
+        )
     except KeyError as e:
         return e
 
@@ -78,7 +102,10 @@ def store():
             unitMeasure = UnitMeasureSchema().dump(unitMeasure)
             session.commit()
 
-        return Response(unitMeasure, status_code=200)
+        return MakeResponse(
+            message=messages.get("RecordCreated").format(resource="unit measure"),
+            data=unitMeasure
+        )
     except KeyError as e:
         return e
 
@@ -90,12 +117,20 @@ def update(id):
 
         with Session(engine) as session:
             unitMeasure = session.query(UnitMeasure).where(UnitMeasure.id == id).first()
+            if unitMeasure is None:
+                return MakeResponse(
+                    message=messages.get("RecordNotFound").format(resource="unit measure", id=id),
+                    status_code=400
+                )
             unitMeasure.name = json_body.get("name")
             unitMeasure = UnitMeasureSchema().dump(unitMeasure)
             session.query(UnitMeasure).where(UnitMeasure.id == id).update(unitMeasure)
             session.commit()
 
-        return Response(unitMeasure, status_code=200)
+        return MakeResponse(
+            message=messages.get("RecordUpdated").format(resource="unit measure", id=id),
+            data=unitMeasure
+        )
     except KeyError as e:
         return e
 
@@ -105,10 +140,43 @@ def destroy(id):
     try:
         with Session(engine) as session:
             unitMeasure = session.query(UnitMeasure).where(UnitMeasure.id == id).first()
+            if unitMeasure is None:
+                return MakeResponse(
+                    message=messages.get("RecordNotFound").format(resource="unit measure", id=id),
+                    status_code=400
+                )
             unitMeasure = session.query(UnitMeasure).where(UnitMeasure.id == id).delete()
             session.commit()
 
-        unitMeasure = UnitMeasureSchema().dump(unitMeasure)
-        return Response(unitMeasure, status_code=200)
+        return MakeResponse(
+            message=messages.get("RecordDeleted").format(resource="unit measure", id=id),
+        )
     except KeyError as e:
         return e
+
+
+def MakeResponse(message, data=None, status_code=200, error=None):
+    status = "OK"
+    if status_code == 400:
+        status = "BadRequest"
+    elif status_code == 500:
+        status = "InternalServerError"
+
+    return Response(body={
+        "status": status,
+        "code": status_code,
+        "message": message,
+        "error": error,
+        "data": data,
+    })
+
+
+def MakeResponsePaginate(message, data, totalRecords):
+    return Response(body={
+        "status": "OK",
+        "code": 200,
+        "message": message,
+        "error": None,
+        "data": data,
+        "total_records": totalRecords,
+    })
