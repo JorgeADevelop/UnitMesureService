@@ -50,7 +50,6 @@ Base.metadata.create_all(engine)
 @app.route('/unit-measures', methods=['GET'])
 def indexUnitMeasures():
     try:
-        engine = create_engine(f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}", echo=True)
         offset = app.current_request.query_params.get("offset", 1)
         limit = app.current_request.query_params.get("limit", 10)
         unitMeasures = []
