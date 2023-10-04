@@ -1,0 +1,25 @@
+name: Deploy Unit Measure Service
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Chalice
+        run: pip install chalice
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run unit tests
+        run: python -m pytest tests/test_app.py
+
+      - name: Deploy
+        run: chalice deploy

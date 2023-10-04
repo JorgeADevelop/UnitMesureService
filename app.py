@@ -48,8 +48,9 @@ Base.metadata.create_all(engine)
 
 
 @app.route('/unit-measures', methods=['GET'])
-def index():
+def indexUnitMeasures():
     try:
+        engine = create_engine(f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}", echo=True)
         offset = app.current_request.query_params.get("offset", 1)
         limit = app.current_request.query_params.get("limit", 10)
         unitMeasures = []
@@ -69,7 +70,7 @@ def index():
 
 
 @app.route('/unit-measure/{id}', methods=['GET'])
-def show(id):
+def showUnitMeasure(id):
     try:
         with Session(engine) as session:
             data = session.query(UnitMeasure).where(UnitMeasure.id == id).first()
@@ -89,7 +90,7 @@ def show(id):
 
 
 @app.route('/unit-measure', methods=['POST'])
-def store():
+def storeUnitMeasure():
     try:
         json_body = app.current_request.json_body
         unitMeasure = UnitMeasure(
@@ -111,7 +112,7 @@ def store():
 
 
 @app.route('/unit-measure/{id}', methods=['PUT'])
-def update(id):
+def updateUnitMeasure(id):
     try:
         json_body = app.current_request.json_body
 
@@ -136,7 +137,7 @@ def update(id):
 
 
 @app.route('/unit-measure/{id}', methods=['DELETE'])
-def destroy(id):
+def destroyUnitMeasure(id):
     try:
         with Session(engine) as session:
             unitMeasure = session.query(UnitMeasure).where(UnitMeasure.id == id).first()
